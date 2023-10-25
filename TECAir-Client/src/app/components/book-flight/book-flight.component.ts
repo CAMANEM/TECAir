@@ -367,7 +367,11 @@ export class BookFlightComponent{
   }
 
   loadFlights(): void {
-    //
+    if (this.isOnline) {
+      this.loadOnlineFlights();
+    } else if (this.isAndroid() && !this.isOnline) {
+      this.loadOfflineFlights();
+    }
   }
 
   loadTravelFlights(): void {
@@ -400,7 +404,8 @@ export class BookFlightComponent{
 
     Network.addListener('networkStatusChange', status => {
       console.log('Network status changed', status);
-      this.checkNetworkStatus();
+      this.chekNetworkConnection();
+      //this.checkNetworkStatus();
     });
 
   }
@@ -413,6 +418,9 @@ export class BookFlightComponent{
     this.vuelos = [];
     this.viajes_vuelos = [];
     this.vuelos_aeropuertos = [];
+    if (!this.isAndroid()) {
+      this.isOnline = true;
+    }
     this.initNetworkObserver();
     this.chekNetworkConnection();
     this.checkNetworkStatus();
@@ -522,7 +530,7 @@ export class BookFlightComponent{
 
     console.log("onlineSelectFlight");
 
-    this.selectedTravelId = selectedTravelId
+    this.selectedTravelId = selectedTravelId;
 
     var vuelosTmp: Vuelo[] = [];
     var viajes_vuelosTmp: ViajeVuelo[] = [];
@@ -532,10 +540,14 @@ export class BookFlightComponent{
     this.vuelosService.getVuelos().subscribe({
       next: (vuelos) => {
         vuelosTmp = vuelos;
+        console.log("getVuelos");
+
 
         this.viajesVuelosService.getViajesVuelos().subscribe({
           next: (viajesVuelos) => {
             viajes_vuelosTmp = viajesVuelos;
+            console.log("getViajesVuelos");
+
 
             viajes_vuelosTmp.sort((a, b) => a.escala - b.escala);
 
@@ -558,6 +570,8 @@ export class BookFlightComponent{
 
             this.asientosService.getAsientos().subscribe({
               next: (asientos) => {
+                console.log("getAsientos");
+
                 asientosTmp = asientos;
 
                 for(let k = 0; k < asientosTmp.length; k++){
@@ -622,26 +636,36 @@ export class BookFlightComponent{
   }
   
   onlineUpdatePersonalInformationD(){
+    console.log("onlineUpdatePersonalInformationD");
 
     this.passengerName = String(this.travelInformationStepD.get('passengerNameInputD')?.value);
     this.passengerLastName1 = String(this.travelInformationStepD.get('passengerLastName1InputD')?.value);
     this.passengerLastName2 = String(this.travelInformationStepD.get('passengerLastName2InputD')?.value);
+    var clientFound = false;
 
     // Checks valid Email
     this.clientesService.getClientes().subscribe({
       next: (clientes) => {
+        console.log("getClientes");
 
         for(let i = 0; i < clientes.length; i++){
+          console.log("Cliente: ", clientes[i].correo);
+          console.log("passenger: ", String(this.travelInformationStepD.get('passengerEmailInputD')?.value));
+          console.log("IfResult: ", clientes[i].correo == String(this.travelInformationStepD.get('passengerEmailInputD')?.value));
           if(clientes[i].correo == String(this.travelInformationStepD.get('passengerEmailInputD')?.value)){
             this.passengerEmail = String(this.travelInformationStepD.get('passengerEmailInputD')?.value);
-          }else{
-            Swal.fire(
-              'Cliente no encontrado',
-              'Inicie sesión o digite un correo electrónico válido',
-              'question'
-            );
-            return;
+            console.log("this.passengerEmail: ", this.passengerEmail);
+            clientFound = true;
+            i = clientes.length;
           }
+        }
+        if (!clientFound) {
+          Swal.fire(
+            'Cliente no encontrado',
+            'Inicie sesión o digite un correo electrónico válido',
+            'question'
+          );
+          return;
         }
       },
       error: (response) => {
@@ -650,10 +674,12 @@ export class BookFlightComponent{
     })
     
     this.passengerTelephone = String(this.travelInformationStepD.get('passengerTelephoneInputD')?.value);
+    console.log("Passenger Phone: ", this.passengerTelephone);
   }
 
   // Function for personal information update button on desktop (second step of desktop stepper)
   updatePersonalInformationD(){
+    console.log("updatePersonalInformationD");
     if (this.isOnline) {
       this.onlineUpdatePersonalInformationD();
     } else {
@@ -661,8 +687,30 @@ export class BookFlightComponent{
     }
   }
 
-  // Function for personal information update button on mobile (second step of mobile stepper)
-  updatePersonalInformationM(){
+  updateOfflinePersonalInformationM(){
+
+    this.passengerName = String(this.travelInformationStepM.get('passengerNameInputM')?.value);
+    this.passengerLastName1 = String(this.travelInformationStepM.get('passengerLastName1InputM')?.value);
+    this.passengerLastName2 = String(this.travelInformationStepM.get('passengerLastName2InputM')?.value);
+
+    var clientes = this.databaseService.getClientes();
+
+    for(let i = 0; i < clientes.length; i++){
+      if(clientes[i].correo == String(this.travelInformationStepM.get('passengerEmailInputD')?.value)){
+        this.passengerEmail = String(this.travelInformationStepM.get('passengerEmailInputD')?.value);
+      }else{
+        Swal.fire(
+          'Cliente no encontrado',
+          'Inicie sesión o digite un correo electrónico válido',
+          'question'
+        );
+        return;
+      }
+    }
+  }
+
+  updateOnlinePersonalInformationM(){
+    
     this.passengerName = String(this.travelInformationStepM.get('passengerNameInputM')?.value);
     this.passengerLastName1 = String(this.travelInformationStepM.get('passengerLastName1InputM')?.value);
     this.passengerLastName2 = String(this.travelInformationStepM.get('passengerLastName2InputM')?.value);
@@ -672,6 +720,8 @@ export class BookFlightComponent{
       next: (clientes) => {
 
         for(let i = 0; i < clientes.length; i++){
+          console.log(clientes[i].correo);
+          console.log(String(this.travelInformationStepM.get('passengerEmailInputD')?.value));
           if(clientes[i].correo == String(this.travelInformationStepM.get('passengerEmailInputD')?.value)){
             this.passengerEmail = String(this.travelInformationStepM.get('passengerEmailInputD')?.value);
           }else{
@@ -690,6 +740,17 @@ export class BookFlightComponent{
     })
 
     this.passengerTelephone = String(this.travelInformationStepM.get('passengerTelephoneInputM')?.value);
+  }
+
+
+  // Function for personal information update button on mobile (second step of mobile stepper)
+  updatePersonalInformationM(){
+    console.log("updatePersonalInformationM");
+    if (this.isOnline) {
+      this.updateOnlinePersonalInformationM();
+    } else if (this.isAndroid() && !this.isOnline) {
+      this.updateOfflinePersonalInformationM();
+    }
   }
 
   selectSeat(seatId: string){
@@ -795,6 +856,10 @@ export class BookFlightComponent{
         }
 
         // Posts flight pass        
+        console.log("Log CorreoCliente: ", this.paseAbordaje.correoCliente);
+        console.log("Log ID: ", this.paseAbordaje.id);
+        console.log("Log puerta: ", this.paseAbordaje.puerta);
+        console.log("Log viajeID: ", this.paseAbordaje.viajeId);
         this.paseAbordajeService.postPaseAbordaje(this.paseAbordaje).subscribe({
           next: (response) => {
 
@@ -890,7 +955,7 @@ export class BookFlightComponent{
 
   // It manages the reserve flight protocol depending on the connection and the device running the program 
   reserveFlight(){
-
+    console.log("reserveFlight");
     if (this.isOnline) {
       this.onlineReserveFlight();
     } else if (this.isAndroid() && !this.isOnline){

@@ -167,7 +167,7 @@ export class DatabaseService {
     await this.loadViajesVuelos();
     await this.loadVuelosAeropuertos();
     await this.loadAsientos();
-    loadPasesAbordajes();
+    await this.loadPasesAbordajes();
   }
 
   //CLIENT
