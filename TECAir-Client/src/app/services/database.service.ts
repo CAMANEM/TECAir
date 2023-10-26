@@ -26,6 +26,8 @@ import { Asiento } from '../models/asiento.module';
 import { AsientosService } from './asientos.service';
 import { PaseAbordaje } from '../models/pase-abordaje.module';
 import { PaseAbordajeService } from './pase-abordaje.service';
+import { Network } from '@capacitor/network';
+import { Capacitor } from '@capacitor/core';
 
 
 const DB_TECAir = 'TECAirDB';
@@ -110,7 +112,9 @@ export class DatabaseService {
     const schemaOfflineChange = `CREATE TABLE IF NOT EXISTS OfflineChange (
                                       nChange NUMBER PRIMARY KEY NOT NULL, 
                                       tableName TEXT NOT NULL, 
-                                      changeId TEXT NOT NULL);`;
+                                      changeId TEXT,
+                                      avionMatricula TEXT,
+                                      nVuelo NUMBER);`;
     const schemaPromociones = `CREATE TABLE IF NOT EXISTS Promocion (
                               Viajeid NUMBER PRIMARY KEY NOT NULL, 
                               precio NUMBER NOT NULL,
@@ -122,25 +126,25 @@ export class DatabaseService {
                               nombre TEXT NOT NULL,
                               ubicacion TEXT);`; 
     const schemaViajesVuelos = `CREATE TABLE IF NOT EXISTS ViajeVuelo (
-      viajeId NUMBER PRIMARY KEY NOT NULL, 
-      nVuelo NUMBER,
-      escala NUMBER);`; 
+                                viajeId NUMBER PRIMARY KEY NOT NULL, 
+                                nVuelo NUMBER,
+                                escala NUMBER);`; 
     const schemaVueloAeropuerto = `CREATE TABLE IF NOT EXISTS VueloAeropuerto (
-      aeropuertoId TEXT PRIMARY KEY NOT NULL, 
-      vueloNumero NUMBER,
-      tipo TEXT);`; 
+                                    aeropuertoId TEXT PRIMARY KEY NOT NULL, 
+                                    vueloNumero NUMBER,
+                                    tipo TEXT);`; 
     const schemaAsiento = `CREATE TABLE IF NOT EXISTS Asiento (
-      id TEXT NOT NULL, 
-      avionMatricula TEXT NOT NULL,
-      estadoId NUMBER,
-      nVuelo NUMBER NOT NULL,
-      PRIMARY KEY (id, avionMatricula, nVuelo));`; 
+                            id TEXT NOT NULL, 
+                            avionMatricula TEXT NOT NULL,
+                            estadoId NUMBER,
+                            nVuelo NUMBER NOT NULL,
+                            PRIMARY KEY (id, avionMatricula, nVuelo));`; 
     const schemaPaseAbordaje = `CREATE TABLE IF NOT EXISTS PaseAbordaje (
-      id NUMBER PRIMARY KEY NOT NULL, 
-      correoCliente TEXT NOT NULL,
-      checkIn BOOLEAN,
-      puerta TEXT NOT NULL,
-      viajeId NUMBER);`; 
+                                id NUMBER PRIMARY KEY NOT NULL, 
+                                correoCliente TEXT NOT NULL,
+                                checkIn BOOLEAN,
+                                puerta TEXT NOT NULL,
+                                viajeId NUMBER);`; 
                                                            
 
     await this.db.execute(schemaCliente);
@@ -218,12 +222,15 @@ export class DatabaseService {
 
   }
 
+  // It is called to create a client account from the mobile offline
   async addCliente(profile: { correo: string; telefono: number; nombre: string; apellido1: string; apellido2: string }) {
-
+    console.log("ADD CLIENTE");
     const query = `INSERT INTO Cliente (Correo, Telefono, Nombre, Apellido1, Apellido2) VALUES ('${profile.correo}','${profile.telefono}','${profile.nombre}','${profile.apellido1}','${profile.apellido2}')`;
     const result = await this.db.query(query);
-
-    this.loadClientsProfile();
+    await this.loadClientsProfile();
+    
+    await this.addOfflineChange('Cliente', profile.correo, '', 0);
+    
 
     return result;
 
@@ -295,17 +302,17 @@ export class DatabaseService {
     return this.offlineChanges;
   }
 
-  async addOfflineChange(TableName: string, ChangeId: string) {
+  async addOfflineChange(TableName: string, ChangeId: string, AvionMatricula: string, Nvuelo: number) {
 
     const result1 = await this.db.query('SELECT COUNT(*) as count FROM OfflineChange;');
     var nChange: number;
     if (result1 && result1.values && result1.values.length > 0) {
       nChange = result1.values[0].count;
       console.log("nChange: ", nChange);
-      const query = `INSERT INTO OfflineChange (nChange, TableName, ChangeId) VALUES ('${nChange}','${TableName}','${ChangeId}')`;
+      const query = `INSERT INTO OfflineChange (nChange, TableName, ChangeId, AvionMatricula, Nvuelo) VALUES ('${nChange}','${TableName}','${ChangeId}','${AvionMatricula}','${Nvuelo}')`;
       const result = await this.db.query(query);
     }
-    this.loadOfflineChanges();
+    await this.loadOfflineChanges();
   }
 
   async deleteOfflineChanges() {
@@ -444,6 +451,8 @@ async addEstudiante(estudiante: { carnet: number; correo: string; universidadId:
 
   await this.loadEstudiantes();
 
+  await this.addOfflineChange('Estudiante', estudiante.carnet.toString(), '', 0);
+
   return result;
 
 }
@@ -454,8 +463,8 @@ async addEstudiante(estudiante: { carnet: number; correo: string; universidadId:
 // Loads viajes from slqite
 async loadViajes() {
   const Viajes = await this.db.query('SELECT * FROM Viaje;');
-  this.viajes.set(Viajes.values || [])
-  return true
+  this.viajes.set(Viajes.values || []);
+  return true;
 }
 
 // get all viajes from local
@@ -589,12 +598,15 @@ getAsientos() {
   return this.asientos;
 }
 
+// reserves a seat
 async putAsiento(Id: string, AvionMatricula: string, EstadoId: number, Nvuelo: number) {
 
   const query = `UPDATE Asiento SET EstadoId='${EstadoId}'  WHERE Id='${Id}' AND  AvionMatricula='${AvionMatricula}' AND  Nvuelo='${Nvuelo}'`;
   const result = this.db.query(query);
 
-  this.loadAsientos();
+  await this.loadAsientos();
+
+  await this.addOfflineChange("Asiento", Id, AvionMatricula, Nvuelo);
 
   return result;
 
@@ -639,13 +651,14 @@ async addPaseAbordaje(paseAbordaje: { id: number; correoCliente: string; checkIn
 
   await this.loadPasesAbordajes();
 
+  await this.addOfflineChange('PaseAbordaje', paseAbordaje.id.toString(), '', 0);
+
   return result;
 
 }
 
 
 // add an array of pasesabordajes to slqlite
-
 
 
 

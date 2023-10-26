@@ -219,10 +219,8 @@ export class SignUpComponent {
     }
     else if (this.isAndroid() && !this.isOnline) {
       await this.database.addCliente(this.cliente);
-      await this.database.addOfflineChange('Cliente', this.cliente.correo);
       if (this.student) {
         await this.database.addEstudiante(this.estudiante);
-        await this.database.addOfflineChange('Estudiante', this.estudiante.carnet.toString());
       }
     }
   }
