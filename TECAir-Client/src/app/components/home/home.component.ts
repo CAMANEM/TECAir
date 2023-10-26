@@ -146,7 +146,7 @@ export class HomeComponent {
     if (this.isAndroid() && this.isOnline) {
       //this.addAeros();
       this.handleOfflineChanges();
-      //this.database.onlineUpdate();
+      this.database.onlineUpdate();
     }
     else if (this.isAndroid() && !this.isOnline) {
       // this.getClientesArray();
@@ -233,7 +233,7 @@ export class HomeComponent {
       this.isOnline = true;
       this.onlineInit(); // Loads data from API
       if (this.isAndroid()) {
-        //await this.database.onlineUpdate(); // La actualización online solo funciona si se llama desde aquí wtf
+        await this.database.onlineUpdate(); // La actualización online solo funciona si se llama desde aquí wtf
       }
     }
     else {

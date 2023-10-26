@@ -334,7 +334,12 @@ export class DatabaseService {
         return false;
       }
     }
-    else if (TableName = "PaseAbordaje") {
+    else if (TableName == "Asiento") {      
+        if (!this.uploadAsiento(ChangeId, AvionMatricula, Nvuelo)) {
+          return false;
+        }
+    }
+    else if (TableName == "PaseAbordaje") {
     var paseId: number = parseInt(ChangeId);
     
       if (!this.uploadPaseAbordaje(paseId)) {
@@ -355,7 +360,6 @@ export class DatabaseService {
       console.log("for");
       var uploaded = await this.uploadOfflineChange(offlineChanges[index].nChange, offlineChanges[index].tableName, offlineChanges[index].changeId, offlineChanges[index].avionMatricula, offlineChanges[index].nVuelo);
       if (!uploaded) {
-        //await this.deleteOfflineChanges();
         return false;
       }
       
@@ -669,7 +673,7 @@ async putAsiento(Id: string, AvionMatricula: string, EstadoId: number, Nvuelo: n
 
   await this.loadAsientos();
 
-  //await this.addOfflineChange("Asiento", Id, AvionMatricula, Nvuelo);
+  await this.addOfflineChange("Asiento", Id, AvionMatricula, Nvuelo);
 
   return result;
 
@@ -690,6 +694,45 @@ async addAsientos(asientos: { id: string; avionMatricula: string; estadoId: numb
   await this.loadAsientos();
 
 }
+
+// Search for the paseAbordaje in offline and upload it to onnline
+async uploadAsiento(Id: string, AvionMatricula: string, Nvuelo: number) {
+  console.log("uploadAsiento");
+  console.log("iD: ", Id);
+  var algo;
+  console.log("uploadAsiento Busca");
+  //var result = await this.db.query(`SELECT * FROM Asiento WHERE Id='${Id}' AND Id='${AvionMatricula}' AND Id='${Nvuelo}';`);
+  console.log("uploadAsiento Encuentra");
+  //if (result && result.values && result.values.length > 0) {
+   // var paseAbordaje = result.values[0];
+   console.log("Arma asiento "); 
+    var asientoTmp: Asiento;
+    asientoTmp = {id: Id, nVuelo: Nvuelo, avionMatricula: AvionMatricula, estadoId: 2}
+   console.log("Armó asiento "); 
+   console.log("id: ", asientoTmp.id); 
+   console.log("Nvuelo: ", asientoTmp.nVuelo); 
+   console.log("avionm: ", asientoTmp.avionMatricula); 
+   console.log("estado: ", asientoTmp.estadoId); 
+    this.asientosServices.putAsiento(asientoTmp.id, asientoTmp.nVuelo, asientoTmp.avionMatricula, asientoTmp).subscribe({
+      next: (response) => {
+        return true;
+      },
+      error: (response) => {
+        console.log(response);
+        return false;
+      }
+    });
+    return true;
+  /*} else {
+    console.log("Error Uploading Asiento ", algo)
+    return false; // No record found with the given ID
+  }*/
+}
+
+
+
+
+
 
 
 //   ****************      PaseAbodaje      *******************
