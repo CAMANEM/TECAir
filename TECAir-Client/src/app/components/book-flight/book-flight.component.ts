@@ -617,22 +617,32 @@ export class BookFlightComponent{
     this.passengerLastName1 = String(this.travelInformationStepD.get('passengerLastName1InputD')?.value);
     this.passengerLastName2 = String(this.travelInformationStepD.get('passengerLastName2InputD')?.value);
 
+    var clientFound = false;
+
     // Checks valid Email
     var clientesTemp = this.databaseService.getClientes();
     var clientes = clientesTemp();
     for(let i = 0; i < clientes.length; i++){
+      console.log("Clientes: ", clientes[i].correo);
+      console.log("Passenger: ", String(this.travelInformationStepD.get('passengerEmailInputD')?.value));
+      
       if(clientes[i].correo == String(this.travelInformationStepD.get('passengerEmailInputD')?.value)){
+        console.log("Result : ", true);
         this.passengerEmail = String(this.travelInformationStepD.get('passengerEmailInputD')?.value);
-      }else{
-        Swal.fire(
-          'Cliente no encontrado',
-          'Inicie sesión o digite un correo electrónico válido',
-          'question'
-        );
-        return;
+        clientFound = true;
+        i = clientes.length;
       }
     }
+    if (!clientFound) {
+      Swal.fire(
+        'Cliente no encontrado',
+        'Inicie sesión o digite un correo electrónico válido',
+        'question'
+      );
+      return;
+    }
     this.passengerTelephone = String(this.travelInformationStepD.get('passengerTelephoneInputD')?.value);
+    console.log("Telephone : ", this.passengerTelephone);
   }
   
   onlineUpdatePersonalInformationD(){
@@ -646,15 +656,9 @@ export class BookFlightComponent{
     // Checks valid Email
     this.clientesService.getClientes().subscribe({
       next: (clientes) => {
-        console.log("getClientes");
-
         for(let i = 0; i < clientes.length; i++){
-          console.log("Cliente: ", clientes[i].correo);
-          console.log("passenger: ", String(this.travelInformationStepD.get('passengerEmailInputD')?.value));
-          console.log("IfResult: ", clientes[i].correo == String(this.travelInformationStepD.get('passengerEmailInputD')?.value));
           if(clientes[i].correo == String(this.travelInformationStepD.get('passengerEmailInputD')?.value)){
             this.passengerEmail = String(this.travelInformationStepD.get('passengerEmailInputD')?.value);
-            console.log("this.passengerEmail: ", this.passengerEmail);
             clientFound = true;
             i = clientes.length;
           }
@@ -682,30 +686,46 @@ export class BookFlightComponent{
     console.log("updatePersonalInformationD");
     if (this.isOnline) {
       this.onlineUpdatePersonalInformationD();
-    } else {
-      this.offlineUpdatePersonalInformationD();
     }
+    else if (this.isAndroid() && !this.isOnline) {
+      this.updateOfflinePersonalInformationM();
+    }
+    
   }
 
   updateOfflinePersonalInformationM(){
+    console.log("updateOfflinePersonalInformationM");
 
     this.passengerName = String(this.travelInformationStepM.get('passengerNameInputM')?.value);
     this.passengerLastName1 = String(this.travelInformationStepM.get('passengerLastName1InputM')?.value);
     this.passengerLastName2 = String(this.travelInformationStepM.get('passengerLastName2InputM')?.value);
+    console.log(this.passengerName);
+    console.log(this.passengerLastName1);
+    console.log(this.passengerLastName2);
 
-    var clientes = this.databaseService.getClientes();
+    var clientesTemp = this.databaseService.getClientes();
+    var clientes = clientesTemp();
+    
+    console.log("lenght",clientes.length);
+    var clientFound = false;
 
     for(let i = 0; i < clientes.length; i++){
-      if(clientes[i].correo == String(this.travelInformationStepM.get('passengerEmailInputD')?.value)){
-        this.passengerEmail = String(this.travelInformationStepM.get('passengerEmailInputD')?.value);
-      }else{
-        Swal.fire(
-          'Cliente no encontrado',
-          'Inicie sesión o digite un correo electrónico válido',
-          'question'
-        );
-        return;
+      console.log("Clientes: ", clientes[i]);
+      console.log("passenger: ", String(this.travelInformationStepM.get('passengerEmailInputM')?.value));
+      if(clientes[i].correo == String(this.travelInformationStepM.get('passengerEmailInputM')?.value)){
+        this.passengerEmail = String(this.travelInformationStepM.get('passengerEmailInputM')?.value);
+        clientFound = true;
+        console.log("Result: ", clientFound);
+        i = clientes.length;
       }
+    }
+    if (!clientFound) {
+      Swal.fire(
+        'Cliente no encontrado',
+        'Inicie sesión o digite un correo electrónico válido',
+        'question'
+      );
+      return;
     }
   }
 
@@ -714,24 +734,27 @@ export class BookFlightComponent{
     this.passengerName = String(this.travelInformationStepM.get('passengerNameInputM')?.value);
     this.passengerLastName1 = String(this.travelInformationStepM.get('passengerLastName1InputM')?.value);
     this.passengerLastName2 = String(this.travelInformationStepM.get('passengerLastName2InputM')?.value);
-    
+    var clientFound = false;
     // Checks valid Email
     this.clientesService.getClientes().subscribe({
       next: (clientes) => {
 
         for(let i = 0; i < clientes.length; i++){
           console.log(clientes[i].correo);
-          console.log(String(this.travelInformationStepM.get('passengerEmailInputD')?.value));
+          console.log(String(this.travelInformationStepM.get('passengerEmailInputM')?.value));
           if(clientes[i].correo == String(this.travelInformationStepM.get('passengerEmailInputD')?.value)){
             this.passengerEmail = String(this.travelInformationStepM.get('passengerEmailInputD')?.value);
-          }else{
-            Swal.fire(
-              'Cliente no encontrado',
-              'Inicie sesión o digite un correo electrónico válido',
-              'question'
-            );
-            return;
+            clientFound = true;
+            i = clientes.length;
           }
+        }
+        if (!clientFound) {
+          Swal.fire(
+            'Cliente no encontrado',
+            'Inicie sesión o digite un correo electrónico válido',
+            'question'
+          );
+          return;
         }
       },
       error: (response) => {
@@ -778,7 +801,7 @@ export class BookFlightComponent{
     }
   }
 
-  offlineReserveFlight(){
+  async offlineReserveFlight(){
     
     this.paseAbordaje = {id: 0, correoCliente: '', checkIn: false, puerta: '', viajeId: 0};
 
@@ -814,7 +837,76 @@ export class BookFlightComponent{
         this.paseAbordaje.puerta += numeroAleatorio;
       }
     }
+
+    // Posts flight pass        
+    console.log("Log CorreoCliente: ", this.paseAbordaje.correoCliente);
+    console.log("Log ID: ", this.paseAbordaje.id);
+    console.log("Log puerta: ", this.paseAbordaje.puerta);
+    console.log("Log viajeID: ", this.paseAbordaje.viajeId);
     
+    await this.databaseService.addPaseAbordaje(this.paseAbordaje);
+
+    // Updates seat information on DB
+        
+    var vuelosTmp: Vuelo[] = [];
+    var viajes_vuelosTmp: ViajeVuelo[] = [];
+
+    this.asientos = [];
+
+    var vuelosTemp = this.databaseService.getVuelos();
+    var vuelosTmp = vuelosTemp();
+
+    var viajesVuelosTemp = this.databaseService.getViajesVuelos();
+    var viajes_vuelosTmp = viajesVuelosTemp();
+
+    viajes_vuelosTmp.sort((a, b) => a.escala - b.escala);
+
+    var selectedTravelFirstFlight: number = -1;
+
+    for(let i = 0; i < viajes_vuelosTmp.length; i++){
+      if(viajes_vuelosTmp[i].viajeId == this.selectedTravelId){
+        selectedTravelFirstFlight = viajes_vuelosTmp[i].nVuelo;
+        break;
+      }
+    }
+
+    var asientoTmp: Asiento;
+
+    for(let i = 0; i < this.selectedseatsId.length; i++){
+      asientoTmp = {id: this.selectedseatsId[i], nVuelo: selectedTravelFirstFlight, avionMatricula: this.selectedAircraftId, estadoId: 2}
+      await this.databaseService.putAsiento(asientoTmp.id, asientoTmp.avionMatricula, asientoTmp.estadoId, asientoTmp.nVuelo);
+    }
+
+    if(this.paymentInformationStepD.valid || this.paymentInformationStepM.valid){
+      Swal.fire({
+        position: 'center',
+        icon: 'success',
+        title: 'Viaje reservado!',
+        showConfirmButton: false,
+        timer: 2000,
+      }).then(() => {
+        this.router.navigate(["tecair"]);
+      });
+
+      var elementoEncontrado = vuelosTmp[0];
+      var isVueloEncontrado = false;
+      for(let i = 0; i < vuelosTmp.length; i++){
+        if(vuelosTmp[i].nVuelo == selectedTravelFirstFlight){
+          elementoEncontrado = vuelosTmp[i];
+          isVueloEncontrado = true;
+          break;
+        }
+      }
+
+      //const elementoEncontrado = vuelos.find(vuelo => vuelo.nVuelo === selectedTravelFirstFlight);
+
+        if (isVueloEncontrado) {
+          this.sharedService.createBookingPDF(this.paseAbordaje, this.passengerName, this.passengerLastName1.toString(), this.passengerLastName2, this.passengerTelephone, this.selectedseatsId, elementoEncontrado.fechaSalida);
+
+            //console.log(elementoEncontrado);
+        } 
+    }
+
   }
 
   onlineReserveFlight(){

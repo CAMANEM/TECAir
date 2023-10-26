@@ -174,7 +174,7 @@ export class DatabaseService {
   async loadClientsProfile() {
     const Profiles = await this.db.query('SELECT * FROM Cliente;');
     this.profile.set(Profiles.values || [])
-    return true
+    return true;
   }
 
 
@@ -589,6 +589,17 @@ getAsientos() {
   return this.asientos;
 }
 
+async putAsiento(Id: string, AvionMatricula: string, EstadoId: number, Nvuelo: number) {
+
+  const query = `UPDATE Asiento SET EstadoId='${EstadoId}'  WHERE Id='${Id}' AND  AvionMatricula='${AvionMatricula}' AND  Nvuelo='${Nvuelo}'`;
+  const result = this.db.query(query);
+
+  this.loadAsientos();
+
+  return result;
+
+}
+
 
 // add an array of asientos to slqlite
 async addAsientos(asientos: { id: string; avionMatricula: string; estadoId: number; nVuelo: number}[]) {
@@ -606,8 +617,7 @@ async addAsientos(asientos: { id: string; avionMatricula: string; estadoId: numb
 }
 
 
-
-//   ****************      Asiento      *******************
+//   ****************      PaseAbodaje      *******************
 
 // Loads asientos from slqite
 async loadPasesAbordajes() {
@@ -619,6 +629,18 @@ async loadPasesAbordajes() {
 // get all asientos from local
 getPasesAbordajes() {
   return this.pasesAbordajes;
+}
+
+// add a PaseAbordaje to SQLite
+async addPaseAbordaje(paseAbordaje: { id: number; correoCliente: string; checkIn: boolean; puerta: string; viajeId: number }) {
+
+  const query = `INSERT INTO PaseAbordaje (Id, CorreoCliente, CheckIn, Puerta, ViajeId) VALUES ('${paseAbordaje.id}','${paseAbordaje.correoCliente}','${paseAbordaje.checkIn}','${paseAbordaje.puerta}','${paseAbordaje.viajeId}')`;
+  const result = await this.db.query(query);
+
+  await this.loadPasesAbordajes();
+
+  return result;
+
 }
 
 
