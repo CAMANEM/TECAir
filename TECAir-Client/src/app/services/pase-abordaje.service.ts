@@ -17,6 +17,7 @@ export class PaseAbordajeService {
   }
 
   postPaseAbordaje(paseAbordaje: PaseAbordaje): Observable<number> {
+    paseAbordaje.checkIn = false;
     return this.http.post<number>(this.baseApiUrl + '/api/PasesAbordajes', paseAbordaje);
   }
 }

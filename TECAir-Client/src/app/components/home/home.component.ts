@@ -71,7 +71,7 @@ export class HomeComponent {
   async uploadOfflineChange(offlineChange: OfflineChange) {
     console.log("UPLOADER");
     if (offlineChange.tableName == "Cliente") {
-      this.database.getCliente(offlineChange.changeId);
+      this.database.uploadCliente(offlineChange.changeId);
     }
   }
 
@@ -80,16 +80,21 @@ export class HomeComponent {
   handleOfflineChanges() {
     console.log("HANDLER Offline");
     if (this.isAndroid()) {
+      var uploaded = this.database.uploadOfflineChanges();
+      if (!uploaded) {
+        console.log("Error al cargar cambios offline");
+        Swal.fire(
+          'Error al cargar cambios Offline',
+          'Su asiento propablemente fue comprado por alguen mas',
+          'question'
+        );
+      }
+      /*
       var offlineChanges: OfflineChange[] = [];
       var changesTemp = this.database.getOfflineChanges();
       offlineChanges = changesTemp();
       this.uploadOfflineChange(offlineChanges[(offlineChanges.length - 1)]); //COMENTAR
-      /*
-      while ( 0 < offlineChanges.length ) {
-        this.uploadOfflineChange(offlineChanges[(offlineChanges.length-1)]);
-        offlineChanges.pop();
-      }
-      */
+       */
     }
   }
 
@@ -141,7 +146,7 @@ export class HomeComponent {
     if (this.isAndroid() && this.isOnline) {
       //this.addAeros();
       this.handleOfflineChanges();
-      this.database.onlineUpdate();
+      //this.database.onlineUpdate();
     }
     else if (this.isAndroid() && !this.isOnline) {
       // this.getClientesArray();
@@ -228,7 +233,7 @@ export class HomeComponent {
       this.isOnline = true;
       this.onlineInit(); // Loads data from API
       if (this.isAndroid()) {
-        await this.database.onlineUpdate(); // La actualización online solo funciona si se llama desde aquí wtf
+        //await this.database.onlineUpdate(); // La actualización online solo funciona si se llama desde aquí wtf
       }
     }
     else {

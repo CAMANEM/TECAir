@@ -62,6 +62,14 @@ export class DatabaseService {
     apellido2: ''
   };
 
+  addPaseAbordajeRequest: PaseAbordaje = {
+  id: 0,
+  correoCliente: '',
+  checkIn: false,
+  puerta: '',
+  viajeId: 0
+  };
+
   constructor(private http: HttpClient, private profileService: ProfileService, private universidadesService: UniversidadesService, private aeropuertosService: AeropuertosService, private estudianteService: EstudiantesService, private viajesService: ViajesService, private vuelosServices: VuelosService, private viajeVueloServices: ViajesVuelosService, private vueloAeropuertoServices: VuelosAeropuertosService, private asientosServices: AsientosService, private pasesAbordajesServices: PaseAbordajeService) {}
 
   baseApiUrl: string = environment.baseApiUrl;
@@ -188,7 +196,8 @@ export class DatabaseService {
 
 
   // Search for the client in offline and upload it to onnline
-  async getCliente(Correo: string) {
+  async uploadCliente(Correo: string) {
+    console.log("uploadCliente");
     var result = await this.db.query(`SELECT * FROM Cliente WHERE Correo='${Correo}';`);
     if (result && result.values && result.values.length > 0) {
       var client = result.values[0];
@@ -202,9 +211,11 @@ export class DatabaseService {
           console.log("Error getCliente database.service: ", this.addClientRequest);
         }
       });
-      return result;
+      console.log("Cliente Uploaded");
+      return true;
     } else {
-      return null; // No record found with the given ID
+      console.log("Error Uploading Cliente")
+      return false; // No record found with the given ID
     }
   }
 
@@ -315,13 +326,65 @@ export class DatabaseService {
     await this.loadOfflineChanges();
   }
 
-  async deleteOfflineChanges() {
 
-    const query = `DELETE FROM OfflineChange`;
+  async uploadOfflineChange(Nchange: number, TableName: string, ChangeId: string, AvionMatricula: string, Nvuelo: number){
+    console.log("uploadOfflineChange");
+    if (TableName == "Cliente") {
+      if (!this.uploadCliente(ChangeId)){ 
+        return false;
+      }
+    }
+    else if (TableName = "PaseAbordaje") {
+    var paseId: number = parseInt(ChangeId);
+    
+      if (!this.uploadPaseAbordaje(paseId)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // tries to upload all offline changes
+  async uploadOfflineChanges(){
+    console.log("uploadOfflineChanges");
+    var offlineChanges: OfflineChange[] = [];
+    var changesTemp = this.getOfflineChanges();
+    offlineChanges = changesTemp();
+
+    for (let index = 0; index < offlineChanges.length; index++) {
+      console.log("for");
+      var uploaded = await this.uploadOfflineChange(offlineChanges[index].nChange, offlineChanges[index].tableName, offlineChanges[index].changeId, offlineChanges[index].avionMatricula, offlineChanges[index].nVuelo);
+      if (!uploaded) {
+        //await this.deleteOfflineChanges();
+        return false;
+      }
+      
+    }
+    await this.deleteOfflineChanges();
+    return true;
+  }
+
+  async deleteOfflineChange(Nchange: number) {
+    const query = `DELETE FROM OfflineChange WHERE Nchange=${Nchange}`;
     const result = this.db.query(query);
+
     this.loadOfflineChanges();
     return result;
+
   }
+
+  async deleteOfflineChanges() {
+    console.log("deleting offline table");
+
+    const query = `DELETE FROM OfflineChange`;
+    const result = await this.db.query(query);
+    await this.loadOfflineChanges();
+    console.log("should be deleted");
+
+    return result;
+  }
+
+  
 
 
 
@@ -606,7 +669,7 @@ async putAsiento(Id: string, AvionMatricula: string, EstadoId: number, Nvuelo: n
 
   await this.loadAsientos();
 
-  await this.addOfflineChange("Asiento", Id, AvionMatricula, Nvuelo);
+  //await this.addOfflineChange("Asiento", Id, AvionMatricula, Nvuelo);
 
   return result;
 
@@ -645,16 +708,51 @@ getPasesAbordajes() {
 
 // add a PaseAbordaje to SQLite
 async addPaseAbordaje(paseAbordaje: { id: number; correoCliente: string; checkIn: boolean; puerta: string; viajeId: number }) {
-
-  const query = `INSERT INTO PaseAbordaje (Id, CorreoCliente, CheckIn, Puerta, ViajeId) VALUES ('${paseAbordaje.id}','${paseAbordaje.correoCliente}','${paseAbordaje.checkIn}','${paseAbordaje.puerta}','${paseAbordaje.viajeId}')`;
+  var pasesTemp = this.getPasesAbordajes();
+  var pases=pasesTemp().length;
+  console.log("lenght ", pases);
+  const query = `INSERT INTO PaseAbordaje (Id, CorreoCliente, CheckIn, Puerta, ViajeId) VALUES ('${pases+2000}','${paseAbordaje.correoCliente}','${paseAbordaje.checkIn}','${paseAbordaje.puerta}','${paseAbordaje.viajeId}')`;
   const result = await this.db.query(query);
 
   await this.loadPasesAbordajes();
 
-  await this.addOfflineChange('PaseAbordaje', paseAbordaje.id.toString(), '', 0);
+  await this.addOfflineChange('PaseAbordaje', (pases+2000).toString(), '', 0);
 
   return result;
 
+}
+
+// Search for the paseAbordaje in offline and upload it to onnline
+async uploadPaseAbordaje(Id: number) {
+  console.log("uploadPaseAbordaje");
+  console.log("iD: ", Id);
+  var algo;
+  var result = await this.db.query(`SELECT * FROM PaseAbordaje WHERE Id='${Id}';`);
+  if (result && result.values && result.values.length > 0) {
+    var paseAbordaje = result.values[0];
+    this.addPaseAbordajeRequest.id = Id;
+    this.addPaseAbordajeRequest.correoCliente = paseAbordaje.correoCliente;
+    this.addPaseAbordajeRequest.checkIn = false;
+    this.addPaseAbordajeRequest.puerta= paseAbordaje.puerta;
+    this.addPaseAbordajeRequest.viajeId = paseAbordaje.viajeId;
+    console.log("En el If");
+    console.log("addPaseAbordajeRequest.id: ", Id);
+    console.log("addPaseAbordajeRequest.correo: ", this.addPaseAbordajeRequest.correoCliente);
+    console.log("addPaseAbordajeRequest.cheIn: ", this.addPaseAbordajeRequest.checkIn)
+    console.log("addPaseAbordajeRequest.puerta: ", this.addPaseAbordajeRequest.puerta);
+    console.log("addPaseAbordajeRequest.viajeId: ", this.addPaseAbordajeRequest.viajeId)
+    console.log("Is number: ", (0<Id));
+    this.pasesAbordajesServices.postPaseAbordaje(this.addPaseAbordajeRequest).subscribe({
+      next: (response) => {
+        algo = response;
+        console.log("Error uploadPaseAbordaje database.service: ", response);
+      }
+    });
+    return true;
+  } else {
+    console.log("Error Uploading pase ", algo)
+    return false; // No record found with the given ID
+  }
 }
 
 
